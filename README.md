@@ -644,11 +644,8 @@ async def main():
 asyncio.run(main())
 ```
 
-##  Documentation
+##  Examples
 
-For comprehensive documentation with more examples:
-
-- **[Full API Documentation](./docs/README.md)**
 - **[Example Scripts](./docs/examples/)**
   - [Download Movie CLI](./docs/examples/download-movie-cli.py)
   - [Download Series CLI](./docs/examples/download-series-cli.py)
