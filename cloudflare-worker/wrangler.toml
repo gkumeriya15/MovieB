@@ -1,0 +1,17 @@
+name = "moviebox-api-proxy"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+[build]
+command = "echo 'No build step required'"
+
+[[build.upload]]
+format = "modules"
+
+[build.upload.rules]
+type = "ESModule"
+globs = ["**/*.js"]
+
+# Environment variables
+[vars]
+BACKEND_URL = "https://your-render-api.onrender.com"

@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: moviebox-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    port: 8000
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+    autoDeploy: true
