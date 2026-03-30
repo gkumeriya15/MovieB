@@ -1,7 +1,7 @@
 services:
   - type: web
     name: moviebox-api
-    runtime: docker
+    env: docker
     dockerfilePath: ./Dockerfile
     port: 8000
     healthCheckPath: /health
