@@ -14,6 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the existing moviebox-api package
 COPY src/ ./src/
 COPY pyproject.toml .
+COPY README.md .
 
 # Install the local package
 RUN pip install -e .
