@@ -1,0 +1,29 @@
+import type { Config } from 'typescript'
+
+const config: Config = {
+  compilerOptions: {
+    target: 'ES2020',
+    useDefineForClassFields: true,
+    lib: ['ES2020', 'DOM', 'DOM.Iterable'],
+    module: 'ESNext',
+    skipLibCheck: true,
+    esModuleInterop: true,
+    allowSyntheticDefaultImports: true,
+    strict: true,
+    resolveJsonModule: true,
+    declaration: true,
+    declarationMap: true,
+    sourceMap: true,
+    moduleResolution: 'bundler',
+    isolatedModules: true,
+    jsx: 'react-jsx',
+    baseUrl: '.',
+    paths: {
+      '@/*': ['./src/*'],
+    },
+  },
+  include: ['src', 'next-env.d.ts'],
+  exclude: ['node_modules'],
+}
+
+export default config

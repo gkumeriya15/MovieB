@@ -1,0 +1,53 @@
+# Core
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+python-multipart==0.0.6
+
+# Database
+sqlalchemy==2.0.23
+alembic==1.12.1
+psycopg2-binary==2.9.9  # PostgreSQL
+pymysql==1.1.0  # MySQL (optional)
+
+# Auth & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+PyJWT==2.8.1
+cryptography==41.0.7
+python-dotenv==1.0.0
+
+# API & Validation
+email-validator==2.1.0
+
+# Rate Limiting
+slowapi==0.1.9
+
+# HTTP Client
+httpx==0.25.2
+requests==2.31.0
+
+# TMDB API
+tmdbv3api==1.7.6  # Optional: for TMDB integration
+
+# AWS S3
+boto3==1.29.7  # Optional: for S3 storage
+
+# Redis (optional for caching)
+redis==5.0.1
+
+# Logging & Monitoring
+structlog==23.2.0
+
+# Development & Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+black==23.11.0
+flake8==6.1.0
+pylint==3.0.3
+mypy==1.7.0
+
+# Uvicorn extra features
+httptools==0.6.1
