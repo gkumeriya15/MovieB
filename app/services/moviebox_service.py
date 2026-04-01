@@ -3,8 +3,10 @@ MovieBox service layer - wraps the existing moviebox-api logic
 """
 
 import asyncio
+import re
 from typing import Any, Dict, List, Optional, Union
 from contextlib import asynccontextmanager
+from urllib.parse import parse_qs, urlparse
 
 from moviebox_api.v1.core import Search, MovieDetails, TVSeriesDetails
 from moviebox_api.v1.constants import SubjectType
@@ -13,6 +15,7 @@ from moviebox_api.v1.extractor.models.json import ItemJsonDetailsModel
 from moviebox_api.v1.requests import Session
 from moviebox_api.v1.download import DownloadableMovieFilesDetail, DownloadableTVSeriesFilesDetail
 from moviebox_api.v1.exceptions import MovieboxApiException
+from moviebox_api.v1.helpers import validate_item_page_url
 
 from app.utils.logger import get_logger
 
@@ -25,6 +28,57 @@ class MovieBoxService:
 
     def __init__(self):
         self._session: Optional[Session] = None
+        self._page_url_cache: Dict[str, str] = {}
+
+    def _is_item_id(self, value: str) -> bool:
+        """Check whether a value is a numeric item ID"""
+        return bool(re.fullmatch(r"\d+", value.strip())) if isinstance(value, str) else False
+
+    def _normalize_page_url(self, page_url_or_id: str) -> str:
+        """Normalize input into a valid relative page URL for scraping."""
+        if not page_url_or_id or not isinstance(page_url_or_id, str):
+            raise ValueError("Invalid page_url or item not found")
+
+        raw = page_url_or_id.strip()
+
+        # Accept full URLs, extract path + query
+        parsed = urlparse(raw)
+        if parsed.scheme and parsed.netloc:
+            raw = parsed.path + (f"?{parsed.query}" if parsed.query else "")
+
+        # Accept id directly and map from cache or reconstruct
+        candidate_id = raw.lstrip("/")
+        if self._is_item_id(candidate_id):
+            if candidate_id in self._page_url_cache:
+                cached_page_url = self._page_url_cache[candidate_id]
+                logger.debug(f"Resolved item id {candidate_id} -> cached page_url {cached_page_url}")
+                return cached_page_url
+
+            reconstructed = f"/detail/{candidate_id}?id={candidate_id}"
+            logger.debug(f"Reconstructed page_url from item id {candidate_id}: {reconstructed}")
+            raw = reconstructed
+
+        # Ensure leading slash for relative URLs
+        if not raw.startswith("/"):
+            raw = f"/{raw}"
+
+        # If we have a page URL without id query, try to keep existing (some details endpoints may not require it)
+        # Ensure we have a valid detail path before attempting to validate
+        if "/detail/" not in raw:
+            raise ValueError("Invalid page_url or item not found")
+
+        try:
+            valid_page_url = validate_item_page_url(raw)
+        except ValueError:
+            raise ValueError("Invalid page_url or item not found")
+
+        # Cache the mapping from id to page_url for future id lookups
+        query = parse_qs(urlparse(valid_page_url).query)
+        item_id = query.get("id", [None])[0]
+        if item_id:
+            self._page_url_cache[item_id] = valid_page_url
+
+        return valid_page_url
 
     @asynccontextmanager
     async def _get_session(self) -> Session:
@@ -64,26 +118,32 @@ class MovieBoxService:
                 content = await search.get_content()
                 model = await search.get_content_model()
 
+                items = []
+                for item in model.items:
+                    page_url = item.page_url
+                    if item.subjectId and page_url:
+                        # cache ids from search results for subsequent details/stream requests
+                        self._page_url_cache[item.subjectId] = page_url
+
+                    items.append({
+                        "id": item.subjectId,
+                        "title": item.title,
+                        "subject_type": item.subjectType.value,
+                        "release_date": item.releaseDate.isoformat() if item.releaseDate else None,
+                        "genre": item.genre,
+                        "country": item.countryName,
+                        "imdb_rating": item.imdbRatingValue,
+                        "cover": {
+                            "url": str(item.cover.url),
+                            "thumbnail": item.cover.thumbnail
+                        } if item.cover else None,
+                        "page_url": page_url
+                    })
+
                 return {
                     "success": True,
                     "data": {
-                        "items": [
-                            {
-                                "id": item.subjectId,
-                                "title": item.title,
-                                "subject_type": item.subjectType.value,
-                                "release_date": item.releaseDate.isoformat() if item.releaseDate else None,
-                                "genre": item.genre,
-                                "country": item.countryName,
-                                "imdb_rating": item.imdbRatingValue,
-                                "cover": {
-                                    "url": str(item.cover.url),
-                                    "thumbnail": item.cover.thumbnail
-                                } if item.cover else None,
-                                "page_url": item.page_url
-                            }
-                            for item in model.items
-                        ],
+                        "items": items,
                         "pagination": {
                             "page": model.pager.page,
                             "per_page": model.pager.perPage,
@@ -103,10 +163,11 @@ class MovieBoxService:
     async def get_details(self, page_url: str) -> Dict[str, Any]:
         """Get detailed information about a movie or TV series"""
         try:
+            normalized_page_url = self._normalize_page_url(page_url)
+            logger.debug(f"get_details: normalized page_url={normalized_page_url}")
+
             async with self._get_session() as session:
-                # page_url should be something like "detail/naruto-hindi-8iXhwtr47c5?id=4360485895745717992"
-                # The moviebox-api expects the full relative path starting with /detail/
-                full_page_url = page_url if page_url.startswith('/') else f"/{page_url}"
+                full_page_url = normalized_page_url
 
                 # Try movie first, then TV series - both might work but we check the actual type
                 try:
@@ -144,6 +205,12 @@ class MovieBoxService:
                     }
                 }
 
+        except ValueError as e:
+            logger.error(f"Details error for {page_url}: {e}")
+            return {
+                "success": False,
+                "error": "Invalid page_url or item not found"
+            }
         except Exception as e:
             logger.error(f"Details error for {page_url}: {e}")
             return {
@@ -154,9 +221,12 @@ class MovieBoxService:
     async def get_episodes(self, page_url: str) -> Dict[str, Any]:
         """Get episodes for a TV series"""
         try:
+            normalized_page_url = self._normalize_page_url(page_url)
+            logger.debug(f"get_episodes: normalized page_url={normalized_page_url}")
+
             async with self._get_session() as session:
                 # First get the item details to determine type
-                details_result = await self.get_details(page_url)
+                details_result = await self.get_details(normalized_page_url)
                 if not details_result["success"]:
                     return details_result
 
@@ -168,7 +238,7 @@ class MovieBoxService:
                     }
 
                 # Construct the full page URL
-                full_page_url = page_url if page_url.startswith('/') else f"/{page_url}"
+                full_page_url = normalized_page_url
 
                 details = TVSeriesDetails(full_page_url, session)
                 model = await details.get_content_model()
@@ -197,6 +267,12 @@ class MovieBoxService:
                     }
                 }
 
+        except ValueError as e:
+            logger.error(f"Episodes error for {page_url}: {e}")
+            return {
+                "success": False,
+                "error": "Invalid page_url or item not found"
+            }
         except Exception as e:
             logger.error(f"Episodes error for {page_url}: {e}")
             return {
@@ -207,9 +283,12 @@ class MovieBoxService:
     async def get_stream_links(self, page_url: str) -> Dict[str, Any]:
         """Get streaming/download links for a movie or TV series"""
         try:
+            normalized_page_url = self._normalize_page_url(page_url)
+            logger.debug(f"get_stream_links: normalized page_url={normalized_page_url}")
+
             async with self._get_session() as session:
                 # Construct the full page URL
-                full_page_url = page_url if page_url.startswith('/') else f"/{page_url}"
+                full_page_url = normalized_page_url
 
                 # Try movie first, then TV series - both might work but we check the actual type
                 try:

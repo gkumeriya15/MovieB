@@ -18,7 +18,10 @@ limiter = Limiter(key_func=get_remote_address)
 @limiter.limit("20/minute")
 async def get_item_details(
     request: Request,
-    page_url: str = Path(..., description="Page URL identifier (e.g., naruto-hindi-8iXhwtr47c5)")
+    page_url: str = Path(
+        ..., 
+        description="Item identifier (page_url or numeric id). Example page_url: /detail/naruto-2D7JgAQBGX3?id=3325889774849773352"
+    )
 ):
     """
     Get detailed information about a movie or TV series

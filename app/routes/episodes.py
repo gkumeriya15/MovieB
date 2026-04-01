@@ -18,7 +18,10 @@ limiter = Limiter(key_func=get_remote_address)
 @limiter.limit("15/minute")
 async def get_tv_episodes(
     request: Request,
-    page_url: str = Path(..., description="TV series page URL identifier")
+    page_url: str = Path(
+        ..., 
+        description="TV series identifier (page_url or numeric id). Example: /detail/xyz?id=... or 332588..."
+    )
 ):
     """
     Get episodes for a TV series

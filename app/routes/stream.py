@@ -18,7 +18,10 @@ limiter = Limiter(key_func=get_remote_address)
 @limiter.limit("10/minute")  # Streaming links are sensitive, limit more
 async def get_stream_links(
     request: Request,
-    page_url: str = Path(..., description="Item page URL identifier")
+    page_url: str = Path(
+        ..., 
+        description="Item identifier (page_url or numeric id). Example: /detail/xyz?id=... or 332588..."
+    )
 ):
     """
     Get streaming/download links for a movie or TV series
