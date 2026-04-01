@@ -40,11 +40,47 @@ Get streaming/download links for movies. TV series are not supported - use the e
 GET /api/v1/stream/episode/{episode_id}?page_url={series_page_url}
 ```
 
-Get streaming/download links for specific TV series episodes.
+Get streaming/download links for specific TV series episodes with advanced features:
+- ✅ **URL Normalization**: Accepts various URL formats (full URL, relative URL, numeric ID)
+- ✅ **Token Expiration Detection**: Automatically detects and reports expired stream tokens
+- ✅ **Intelligent Caching**: Caches results for 30 minutes with automatic refresh
+- ✅ **Detailed Logging**: Full debugging information for troubleshooting
 
 **Parameters:**
-- `episode_id`: Episode identifier in format `s{season}e{episode}` (e.g., `s1e1`)
+- `episode_id`: Episode identifier in format `s{season}e{episode}` (e.g., `s1e1`, `s2e5`)
 - `page_url`: TV series page URL identifier (query parameter)
+  - Accepts: Full URL (`https://moviebox.ph/detail/slug?id=123`)
+  - Accepts: Relative URL (`/detail/slug?id=123`)
+  - Accepts: Numeric ID (`123`)
+
+**Response Example:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "5203417860348986440",
+    "title": "Boyfriend on Demand",
+    "type": "tv_series",
+    "episode_id": "s1e2",
+    "season": 1,
+    "episode": 2,
+    "streams": [
+      {
+        "quality": "1080p",
+        "url": "https://example.com/video.mp4?sign=xxx&t=1704067200",
+        "size": 2147483648,
+        "format": "mp4",
+        "file_size_human": "2.0 GB",
+        "expires_in_seconds": 86400,
+        "expires_at": 1704067200
+      }
+    ],
+    "best_quality": "1080p"
+  }
+}
+```
+
+For full documentation, see [EPISODE_STREAMING_API.md](EPISODE_STREAMING_API.md)
 
 ### Health Check
 ```
