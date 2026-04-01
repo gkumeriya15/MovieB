@@ -71,14 +71,20 @@ async def test_episodes(search_result=None):
         "Episodes for test page URL"
     )
 
-async def test_stream(search_result=None):
-    """Test stream endpoint"""
-    if search_result and search_result.get("success") and search_result["data"]["items"]:
-        item = search_result["data"]["items"][0]
+async def test_stream():
+    """Test stream endpoint with a movie"""
+    # Search for a movie specifically
+    movie_search = await test_endpoint(
+        f"{BASE_URL}/api/v1/search?q=inception&type=MOVIE&page=1&per_page=1",
+        "Search for movie to test streaming"
+    )
+    
+    if movie_search.get("success") and movie_search["data"]["items"]:
+        item = movie_search["data"]["items"][0]
         page_url = item["page_url"]
         return await test_endpoint(
             f"{BASE_URL}/api/v1/stream/{page_url}",
-            f"Stream links for {page_url}"
+            f"Stream links for movie {page_url}"
         )
     else:
         # Fallback test
@@ -109,7 +115,7 @@ async def main():
     print()
 
     # Test stream
-    stream_result = await test_stream(search_result)
+    stream_result = await test_stream()
     print()
 
     print("🎯 Test Summary:")

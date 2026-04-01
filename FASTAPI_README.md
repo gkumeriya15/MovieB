@@ -28,10 +28,23 @@ GET /api/v1/details/{item_id}
 GET /api/v1/episodes/{item_id}
 ```
 
-### Stream
+### Stream (Movies)
 ```
 GET /api/v1/stream/{item_id}
 ```
+
+Get streaming/download links for movies. TV series are not supported - use the episode streaming endpoint instead.
+
+### Episode Stream (TV Series)
+```
+GET /api/v1/stream/episode/{episode_id}?page_url={series_page_url}
+```
+
+Get streaming/download links for specific TV series episodes.
+
+**Parameters:**
+- `episode_id`: Episode identifier in format `s{season}e{episode}` (e.g., `s1e1`)
+- `page_url`: TV series page URL identifier (query parameter)
 
 ### Health Check
 ```

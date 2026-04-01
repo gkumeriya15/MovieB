@@ -243,27 +243,39 @@ class MovieBoxService:
                 details = TVSeriesDetails(full_page_url, session)
                 model = await details.get_content_model()
 
-                episodes = []
-                if hasattr(model, 'resData') and hasattr(model.resData, 'postList') and model.resData.postList:
-                    for season in model.resData.postList:
-                        if hasattr(season, 'episodes') and season.episodes:
-                            for episode in season.episodes:
-                                episodes.append({
-                                    "id": getattr(episode, 'id', f"s{season.season}e{episode.episode}"),
-                                    "title": getattr(episode, 'title', f"Episode {episode.episode}"),
-                                    "episode_number": getattr(episode, 'episode', 0),
-                                    "season_number": getattr(season, 'season', 0),
-                                    "duration": getattr(episode, 'duration', 0),
-                                    "release_date": episode.releaseDate.isoformat() if hasattr(episode, 'releaseDate') and episode.releaseDate else None
-                                })
+                # Generate episodes from seasons data
+                seasons_data = []
+                total_episodes = 0
+
+                if hasattr(model, 'resData') and hasattr(model.resData, 'resource') and model.resData.resource:
+                    for season in model.resData.resource.seasons:
+                        season_episodes = []
+                        for episode_num in range(1, season.maxEp + 1):
+                            episode_id = f"s{season.se}e{episode_num}"
+                            season_episodes.append({
+                                "id": episode_id,
+                                "title": f"Episode {episode_num}",
+                                "episode_number": episode_num,
+                                "season_number": season.se,
+                                "duration": None,  # Duration not available in season metadata
+                                "release_date": None  # Release date not available in season metadata
+                            })
+                            total_episodes += 1
+
+                        seasons_data.append({
+                            "season_number": season.se,
+                            "episode_count": season.maxEp,
+                            "episodes": season_episodes
+                        })
 
                 return {
                     "success": True,
                     "data": {
                         "id": item_data["id"],
                         "title": item_data["title"],
-                        "total_episodes": len(episodes),
-                        "episodes": episodes
+                        "total_seasons": len(seasons_data),
+                        "total_episodes": total_episodes,
+                        "seasons": seasons_data
                     }
                 }
 
@@ -281,53 +293,32 @@ class MovieBoxService:
             }
 
     async def get_stream_links(self, page_url: str) -> Dict[str, Any]:
-        """Get streaming/download links for a movie or TV series"""
+        """Get streaming/download links for a movie"""
         try:
             normalized_page_url = self._normalize_page_url(page_url)
             logger.debug(f"get_stream_links: normalized page_url={normalized_page_url}")
 
             async with self._get_session() as session:
-                # Construct the full page URL
+                # Get item details to determine type
+                details_result = await self.get_details(normalized_page_url)
+                if not details_result["success"]:
+                    return details_result
+
+                item_data = details_result["data"]
+                if item_data["type"] == "tv_series":
+                    return {
+                        "success": False,
+                        "error": "Use episode-specific streaming endpoints for TV series. Use /api/v1/stream/episode/{episode_id} with page_url parameter."
+                    }
+
+                # Handle movies
                 full_page_url = normalized_page_url
-
-                # Try movie first, then TV series - both might work but we check the actual type
-                try:
-                    details = MovieDetails(full_page_url, session)
-                    model = await details.get_content_model()
-                    item_type = "movie" if model.resData.subject.subjectType.value == 1 else "tv_series"
-                    downloader = DownloadableMovieFilesDetail(session, model) if item_type == "movie" else DownloadableTVSeriesFilesDetail(session, model)
-                except Exception:
-                    # Try TV series
-                    try:
-                        details = TVSeriesDetails(full_page_url, session)
-                        model = await details.get_content_model()
-                        item_type = "tv_series"
-                        downloader = DownloadableTVSeriesFilesDetail(session, model)
-                    except Exception as tv_error:
-                        raise ValueError(f"Could not find item with page URL: {page_url}. TV error: {str(tv_error)}")
+                details = MovieDetails(full_page_url, session)
+                model = await details.get_content_model()
+                downloader = DownloadableMovieFilesDetail(session, model)
 
                 try:
-                    # For movies, use the parameterless get_content_model
-                    # For TV series, we'd need season/episode, but for now get general info
-                    if item_type == "movie":
-                        metadata = await downloader.get_content_model()
-                    else:
-                        # For TV series, try to get download info for first episode
-                        try:
-                            metadata = await downloader.get_content_model(1, 1)
-                        except Exception:
-                            # If episode-specific fails, return empty streams for now
-                            return {
-                                "success": True,
-                                "data": {
-                                    "id": model.resData.subject.subjectId,
-                                    "title": model.resData.subject.title,
-                                    "type": item_type,
-                                    "streams": [],
-                                    "best_quality": None,
-                                    "message": "Streaming links not available for this TV series. Try episode-specific endpoints."
-                                }
-                            }
+                    metadata = await downloader.get_content_model()
 
                     # Check if downloads are available
                     if not hasattr(metadata, 'downloads') or not metadata.downloads:
@@ -336,24 +327,10 @@ class MovieBoxService:
                             "data": {
                                 "id": model.resData.subject.subjectId,
                                 "title": model.resData.subject.title,
-                                "type": item_type,
+                                "type": "movie",
                                 "streams": [],
                                 "best_quality": None,
-                                "message": "No streaming links available for this item."
-                            }
-                        }
-
-                    # Check if downloads are available
-                    if not hasattr(metadata, 'downloads') or not metadata.downloads:
-                        return {
-                            "success": True,
-                            "data": {
-                                "id": model.resData.subject.subjectId,
-                                "title": model.resData.subject.title,
-                                "type": item_type,
-                                "streams": [],
-                                "best_quality": None,
-                                "message": "No streaming links available for this item."
+                                "message": "No streaming links available for this movie."
                             }
                         }
 
@@ -379,7 +356,7 @@ class MovieBoxService:
                         "data": {
                             "id": model.resData.subject.subjectId,
                             "title": model.resData.subject.title,
-                            "type": item_type,
+                            "type": "movie",
                             "streams": streams,
                             "best_quality": best_quality
                         }
@@ -393,7 +370,7 @@ class MovieBoxService:
                         "data": {
                             "id": model.resData.subject.subjectId if 'model' in locals() else "unknown",
                             "title": model.resData.subject.title if 'model' in locals() else "unknown",
-                            "type": item_type if 'item_type' in locals() else "unknown",
+                            "type": "movie",
                             "streams": [],
                             "best_quality": None,
                             "message": f"Streaming links not available: {str(download_error)}"
@@ -405,4 +382,117 @@ class MovieBoxService:
             return {
                 "success": False,
                 "error": f"Failed to get stream links for {page_url}: {str(e)}"
+            }
+
+    async def get_episode_stream_links(self, page_url: str, episode_id: str) -> Dict[str, Any]:
+        """Get streaming/download links for a specific TV series episode"""
+        try:
+            # Parse episode_id (format: s{season}e{episode})
+            import re
+            match = re.match(r"s(\d+)e(\d+)", episode_id.lower())
+            if not match:
+                return {
+                    "success": False,
+                    "error": f"Invalid episode_id format. Expected 's{season}e{episode}', got: {episode_id}"
+                }
+
+            season_num = int(match.group(1))
+            episode_num = int(match.group(2))
+
+            normalized_page_url = self._normalize_page_url(page_url)
+            logger.debug(f"get_episode_stream_links: normalized page_url={normalized_page_url}, episode_id={episode_id}")
+
+            async with self._get_session() as session:
+                # Get item details to verify it's a TV series
+                details_result = await self.get_details(normalized_page_url)
+                if not details_result["success"]:
+                    return details_result
+
+                item_data = details_result["data"]
+                if item_data["type"] != "tv_series":
+                    return {
+                        "success": False,
+                        "error": f"Item {page_url} is not a TV series (type: {item_data['type']})"
+                    }
+
+                # Handle TV series episode
+                full_page_url = normalized_page_url
+                details = TVSeriesDetails(full_page_url, session)
+                model = await details.get_content_model()
+                downloader = DownloadableTVSeriesFilesDetail(session, model)
+
+                try:
+                    metadata = await downloader.get_content_model(season_num, episode_num)
+
+                    # Check if downloads are available
+                    if not hasattr(metadata, 'downloads') or not metadata.downloads:
+                        return {
+                            "success": True,
+                            "data": {
+                                "id": model.resData.subject.subjectId,
+                                "title": model.resData.subject.title,
+                                "type": "tv_series",
+                                "episode_id": episode_id,
+                                "season": season_num,
+                                "episode": episode_num,
+                                "streams": [],
+                                "best_quality": None,
+                                "message": f"No streaming links available for episode {episode_id}."
+                            }
+                        }
+
+                    streams = []
+                    quality_map = metadata.get_quality_downloads_map()
+                    for quality, file_info in quality_map.items():
+                        streams.append({
+                            "quality": quality,
+                            "url": str(file_info.url),
+                            "size": getattr(file_info, 'size', 0),
+                            "format": getattr(file_info, 'format', 'unknown'),
+                            "file_size_human": getattr(file_info, 'get_file_size_human', lambda: 'Unknown')()
+                        })
+
+                    # Get best quality safely
+                    try:
+                        best_quality = metadata.best_media_file.quality if metadata.downloads else None
+                    except Exception:
+                        best_quality = None
+
+                    return {
+                        "success": True,
+                        "data": {
+                            "id": model.resData.subject.subjectId,
+                            "title": model.resData.subject.title,
+                            "type": "tv_series",
+                            "episode_id": episode_id,
+                            "season": season_num,
+                            "episode": episode_num,
+                            "streams": streams,
+                            "best_quality": best_quality
+                        }
+                    }
+
+                except Exception as download_error:
+                    logger.warning(f"Download metadata error for {page_url} episode {episode_id}: {download_error}")
+                    # Return success with empty streams instead of error
+                    return {
+                        "success": True,
+                        "data": {
+                            "id": model.resData.subject.subjectId,
+                            "title": model.resData.subject.title,
+                            "type": "tv_series",
+                            "episode_id": episode_id,
+                            "season": season_num,
+                            "episode": episode_num,
+                            "streams": [],
+                            "best_quality": None,
+                            "message": f"Streaming links not available: {str(download_error)}"
+                        }
+                    }
+
+        except Exception as e:
+            logger.error(f"Episode stream links error for {page_url} episode {episode_id}: {e}")
+            return {
+                "success": False,
+                "error": f"Failed to get stream links for episode {episode_id}: {str(e)}"
             }
