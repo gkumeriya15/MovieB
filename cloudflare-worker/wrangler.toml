@@ -14,4 +14,4 @@ globs = ["**/*.js"]
 
 # Environment variables
 [vars]
-BACKEND_URL = "https://your-render-api.onrender.com"
+BACKEND_URL = "https://movieb-rsoz.onrender.com"
