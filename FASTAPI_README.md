@@ -1,154 +1,64 @@
-# MovieBox API - FastAPI Backend
+# MovieBox API - Simple API Guide
 
-A production-ready REST API for MovieBox built with FastAPI.
+This is the backend API that powers the MovieBox service. It's built with FastAPI and runs on Render.
 
-## Features
+## What is This API?
 
-- 🔍 **Search**: Search movies and TV series
-- 📋 **Details**: Get detailed information about movies/TV series
-- 📺 **Episodes**: Get episode lists for TV series
-- 🎬 **Stream**: Get streaming/download links
-- 🏥 **Health Check**: API health monitoring
-- 📚 **Swagger Docs**: Interactive API documentation at `/docs`
+The API is like a bridge between your website and moviebox.ph. It helps you:
+- Search for movies and TV shows
+- Get movie details
+- Get TV show episodes
+- Get streaming links
 
-## API Endpoints
+## API Endpoints (Simple List)
 
 ### Search
 ```
 GET /api/v1/search?q=naruto&type=ALL&page=1&per_page=24
 ```
+Find movies/TV shows by name.
 
 ### Details
 ```
 GET /api/v1/details/{item_id}
 ```
+Get info about a specific movie or TV show.
 
 ### Episodes
 ```
 GET /api/v1/episodes/{item_id}
 ```
+Get list of episodes for a TV show.
 
-### Stream (Movies)
+### Stream Movie
 ```
 GET /api/v1/stream/{item_id}
 ```
+Get download/stream link for a movie.
 
-Get streaming/download links for movies. TV series are not supported - use the episode streaming endpoint instead.
-
-### Episode Stream (TV Series)
+### Stream Episode
 ```
 GET /api/v1/stream/episode/{episode_id}?page_url={series_page_url}
 ```
+Get download/stream link for a TV episode.
 
-Get streaming/download links for specific TV series episodes with advanced features:
-- ✅ **URL Normalization**: Accepts various URL formats (full URL, relative URL, numeric ID)
-- ✅ **Token Expiration Detection**: Automatically detects and reports expired stream tokens
-- ✅ **Intelligent Caching**: Caches results for 30 minutes with automatic refresh
-- ✅ **Detailed Logging**: Full debugging information for troubleshooting
+**What is episode_id?** Like `s1e1` (Season 1 Episode 1)
 
-**Parameters:**
-- `episode_id`: Episode identifier in format `s{season}e{episode}` (e.g., `s1e1`, `s2e5`)
-- `page_url`: TV series page URL identifier (query parameter)
-  - Accepts: Full URL (`https://moviebox.ph/detail/slug?id=123`)
-  - Accepts: Relative URL (`/detail/slug?id=123`)
-  - Accepts: Numeric ID (`123`)
+**What is page_url?** The web address of the TV show page
 
-**Response Example:**
-```json
-{
-  "success": true,
-  "data": {
-    "id": "5203417860348986440",
-    "title": "Boyfriend on Demand",
-    "type": "tv_series",
-    "episode_id": "s1e2",
-    "season": 1,
-    "episode": 2,
-    "streams": [
-      {
-        "quality": "1080p",
-        "url": "https://example.com/video.mp4?sign=xxx&t=1704067200",
-        "size": 2147483648,
-        "format": "mp4",
-        "file_size_human": "2.0 GB",
-        "expires_in_seconds": 86400,
-        "expires_at": 1704067200
-      }
-    ],
-    "best_quality": "1080p"
-  }
-}
-```
+## Response Format
 
-For full documentation, see [EPISODE_STREAMING_API.md](EPISODE_STREAMING_API.md)
-
-### Health Check
-```
-GET /health
-```
-
-## Installation
-
-1. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-2. Install the local moviebox-api package:
-```bash
-pip install -e .
-```
-
-## Running the Application
-
-### Development
-```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-### Production
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
-```
-
-## Docker
-
-Build and run with Docker:
-```bash
-docker build -t moviebox-api .
-docker run -p 8000:8000 moviebox-api
-```
-
-## Deployment
-
-### Render
-
-1. Connect your GitHub repository to Render
-2. Create a new Web Service
-3. Set the following:
-   - **Runtime**: Docker
-   - **Build Command**: (leave empty)
-   - **Start Command**: (leave empty, uses Dockerfile CMD)
-
-### Environment Variables
-
-Add these environment variables in your deployment platform:
-
-- `ENVIRONMENT`: `production` (optional)
-
-## API Response Format
-
-All endpoints return JSON responses with the following structure:
+All responses look like this:
 
 ```json
 {
   "success": true,
-  "data": { ... },
+  "data": { ... your data ... },
   "error": null
 }
 ```
 
-On error:
+If there's an error:
 ```json
 {
   "success": false,
@@ -156,16 +66,36 @@ On error:
 }
 ```
 
+## Health Check
+
+```
+GET /health
+```
+
+This checks if the API is working. Returns "OK" if healthy.
+
+## Running Locally
+
+For testing, you can run the API on your computer:
+
+1. Install Python
+2. Install dependencies: `pip install -r requirements.txt`
+3. Run: `uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`
+
+## Deployment
+
+The API is deployed on Render using Docker. See main README for setup.
+
 ## CORS
 
-The API allows all origins by default. For production, configure specific allowed origins in `app/main.py`.
+The API allows requests from any website. For security, you can limit this in `app/main.py`.
 
-## Error Handling
+## Errors
 
-- 400: Bad Request (invalid parameters)
-- 404: Not Found (item not found)
-- 500: Internal Server Error
+- 400: Bad request (wrong parameters)
+- 404: Not found (movie/show not found)
+- 500: Server error
 
-## Rate Limiting
+## Interactive Docs
 
-Basic rate limiting is implemented. Configure as needed for production use.
+When running locally, visit `/docs` to see interactive API documentation.

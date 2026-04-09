@@ -1,491 +1,263 @@
-<div align="center">
+# MovieBox API - Beginner Guide
 
-# moviebox-api
+Welcome! This guide will help you set up and use the MovieBox API project. We'll explain everything step-by-step, even if you've never used these tools before.
 
-**Unofficial Python wrapper for moviebox.ph**  
-Search, discover, download, and stream movies & TV series with subtitles
+## 1. Project Overview
 
-[![PyPI version](https://badge.fury.io/py/moviebox-api.svg)](https://pypi.org/project/moviebox-api)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/moviebox-api)](https://pypi.org/project/moviebox-api)
-![Coverage](https://raw.githubusercontent.com/Simatwa/moviebox-api/refs/heads/main/assets/coverage.svg)
-[![PyPI - License](https://img.shields.io/pypi/l/moviebox-api)](https://pypi.org/project/moviebox-api)
-[![Downloads](https://pepy.tech/badge/moviebox-api)](https://pepy.tech/project/moviebox-api)
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+### What This Project Does
+MovieBox API is a free tool that lets you:
+- Search for movies and TV shows
+- Get details about movies and TV shows
+- Download or stream videos
+- Get subtitles in different languages
 
-[Features](#features) • [Installation](#installation) • [Quick Start](#quick-start) • [Usage](#usage) • [Documentation](#documentation)
+It works with moviebox.ph, a website that has movies and TV shows.
 
-</div>
+### Technologies Used
+- **Backend**: FastAPI (Python web server)
+- **Frontend**: Website hosted on Cloudflare Pages
+- **Hosting**: Render (for backend), Cloudflare (for frontend)
 
-
-
-## Features
-
-- **Download Movies & TV Series** : High-quality downloads with multiple resolution options
-- **Subtitle Support** : Download subtitles in multiple languages
-- **Direct Streaming** : Stream via MPV or VLC without downloading (CLI only)
-- **Faster Downloads** : Over 5x faster than standard downloads
-- **Async & Sync Support** : Fully asynchronous with synchronous fallback
-- **Search & Discovery** : Find movies, trending content, and popular searches
-- **Developer-Friendly** : Python API with Pydantic models
-
-
-
-## Installation
-
-### CLI (for end users)
-
-```sh
-pip install "moviebox-api[cli]"
+### How It Works (Simple Diagram)
+```
+Your Website (Cloudflare Pages)
+    ↓
+MovieBox API (Render)
+    ↓
+MovieBox.ph (Streaming Source)
 ```
 
-### Base package (for developers)
+Your website asks the API for movie info, the API gets it from moviebox.ph, and sends it back to your website.
 
-```sh
-pip install "moviebox-api"
+## 2. Prerequisites (Very Important)
+
+Before we start, you need to create some free accounts. Don't worry, they're all free!
+
+### What is GitHub?
+GitHub is like a cloud storage for code. You can upload your project there and share it.
+
+- **Sign up**: Go to [github.com](https://github.com) and create a free account
+- **What you'll do**: Upload this project to GitHub so Render and Cloudflare can use it
+
+### What is Cloudflare Pages?
+Cloudflare Pages is a free way to host websites. It's like putting your website on the internet for free.
+
+- **Sign up**: Go to [pages.cloudflare.com](https://pages.cloudflare.com) and create a free account
+- **What you'll do**: Host your website (frontend) here
+
+### What is Render?
+Render is a free way to run web apps. It's like a computer in the cloud that runs your API.
+
+- **Sign up**: Go to [render.com](https://render.com) and create a free account
+- **What you'll do**: Run your API (backend) here
+
+### What is an API?
+API stands for Application Programming Interface. It's like a messenger between your website and the movie data.
+
+- Your website says: "Give me info about Naruto"
+- API says: "Here's the info from moviebox.ph"
+
+## 3. Folder Structure Explanation
+
+This project has these main folders:
+
+- `/app` → Backend code (FastAPI server)
+- `/src/moviebox_api` → Python code for downloading movies
+- `/cloudflare-worker` → Proxy to make API faster
+- `/docs` → Extra help files
+- `/tests` → Code to check if everything works
+
+## 4. Step-by-Step Deployment Guide
+
+### PART 1: Backend (Render)
+
+Let's run the API on Render first.
+
+1. **Go to Render**
+   - Open [render.com](https://render.com) in your browser
+   - Sign in with your account
+
+2. **Click "New Web Service"**
+   - Look for the blue "New" button
+   - Click "Web Service"
+
+3. **Connect Your GitHub Repo**
+   - Click "Connect GitHub"
+   - Allow Render to access your GitHub
+   - Find this project (moviebox-api) and select it
+
+4. **Set Up the Service**
+   - **Name**: moviebox-api (or any name you like)
+   - **Runtime**: Docker
+   - **Dockerfile Path**: ./Dockerfile
+   - **Port**: 8000
+   - **Health Check Path**: /health
+
+5. **Add Environment Variable**
+   - Click "Environment"
+   - Add:
+     - Key: ENVIRONMENT
+     - Value: production
+
+6. **Enable Auto Deploy**
+   - Check "Auto Deploy" so it updates when you change code
+
+7. **Click Deploy**
+   - Click the "Create Web Service" button
+   - Wait 5-10 minutes for it to build
+   - You'll get a URL like: https://moviebox-api.onrender.com
+
+**Screenshot here**
+
+That's it! Your API is now running.
+
+### PART 2: Frontend (Cloudflare Pages)
+
+Now let's host the website.
+
+**Note**: This project doesn't include frontend code. You'll need to create a simple website that calls the API. Here's how to set it up:
+
+1. **Go to Cloudflare Pages**
+   - Open [pages.cloudflare.com](https://pages.cloudflare.com)
+   - Sign in
+
+2. **Click "Create Project"**
+   - Click the "Create project" button
+
+3. **Connect GitHub Repo**
+   - Click "Connect to Git"
+   - Choose your GitHub account
+   - Select your frontend project (not this one)
+
+4. **Set Build Settings**
+   - **Build command**: npm run build
+   - **Build output directory**: dist
+   - **Root directory**: / (leave empty)
+
+5. **Add Environment Variable**
+   - Click "Environment variables"
+   - Add:
+     - Variable name: VITE_API_URL
+     - Value: https://your-render-url.onrender.com
+
+6. **Click Deploy**
+   - Click "Save and Deploy"
+   - Wait for it to build
+   - You'll get a URL like: https://your-project.pages.dev
+
+**Screenshot here**
+
+## 5. API Usage (Simple Examples)
+
+Your API is now ready! Here are simple examples of how to use it.
+
+### Search for Movies/TV Shows
+```
+GET https://your-api-url.onrender.com/api/v1/search?q=naruto
 ```
 
-### Media Players (optional, required for streaming)
+This returns a list of movies/TV shows with "naruto" in the name.
 
-To stream content directly without downloading, install [MPV](https://mpv.io/installation) or [VLC](https://www.videolan.org):
-
-<details>
-<summary>Linux</summary>
-
-```sh
-# Ubuntu/Debian
-sudo apt install mpv
-
-# Fedora/RHEL
-sudo dnf install mpv
-
-# Arch Linux
-sudo pacman -S mpv
+### Get Movie Details
 ```
-</details>
-
-<details>
-<summary>macOS</summary>
-
-```sh
-brew install mpv
-```
-</details>
-
-<details>
-<summary>Windows</summary>
-
-Download from [mpv.io/installation](https://mpv.io/installation/).
-</details>
-
-<details>
-<summary>Termux (Android)</summary>
-
-```sh
-pip install moviebox-api --no-deps
-pip install 'pydantic==2.9.2'
-pip install rich click bs4 httpx throttlebuster
-```
-</details>
-
-
-
-## Quick Start
-
-### Command Line
-
-```sh
-# Download a movie
-moviebox v2 download-movie "Avatar"
-
-# Download a TV series episode
-moviebox v2 download-series "Game of Thrones" -s 1 -e 1
-
-# Stream a movie (requires MPV)
-moviebox v2 download-movie "Avatar" --stream-via mpv
+GET https://your-api-url.onrender.com/api/v1/details/{item_id}
 ```
 
-### Python API
+Replace {item_id} with the ID from search results.
 
+### Get TV Show Episodes
+```
+GET https://your-api-url.onrender.com/api/v1/episodes?page_url={series_url}
+```
+
+page_url is the web address of the TV show page.
+
+### Stream a Movie
+```
+GET https://your-api-url.onrender.com/api/v1/stream/{item_id}
+```
+
+### Stream a TV Episode
+```
+GET https://your-api-url.onrender.com/api/v1/stream/episode/s1e2?page_url={series_url}
+```
+
+**What is page_url?**
+- It's the web address of the movie/TV show on moviebox.ph
+- Example: https://moviebox.ph/detail/naruto?id=123
+
+**What is episode_id?**
+- Format: s{season}e{episode}
+- s1e1 = Season 1 Episode 1
+- s2e5 = Season 2 Episode 5
+
+## 6. Common Errors & Fixes (Very Important)
+
+### ❌ Error: .venv not found
+**What it means**: Cloudflare can't run Python code.
+**Fix**: Don't deploy backend on Cloudflare. Use Render for backend only.
+
+### ❌ Error: 404 stream not working
+**What it means**: The page_url is wrong.
+**Fix**: Make sure page_url is correct. Copy it from moviebox.ph.
+
+### ❌ Error: CORS issue
+**What it means**: Your website can't talk to the API.
+**Fix**: Add CORS headers in backend. In app/main.py, add:
 ```python
-from moviebox_api.v1 import MovieAuto
-import asyncio
+from fastapi.middleware.cors import CORSMiddleware
 
-async def main():
-    auto = MovieAuto()
-    movie_file, subtitle_file = await auto.run("Avatar")
-    print(f"Movie: {movie_file.saved_to}")
-    print(f"Subtitle: {subtitle_file.saved_to}")
-
-asyncio.run(main())
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Change to your website URL
+    allow_credentials=True,
+    allow_methods=["GET"],
+    allow_headers=["*"],
+)
 ```
 
-## Usage
+### ❌ Error: Build failed on Render
+**Fix**: Check the logs. Make sure Dockerfile is correct.
 
-### Command Line Interface
+### ❌ Error: API returns error
+**Fix**: Check the API URL. Make sure it's https://your-app.onrender.com
 
-```sh
-moviebox v2 --help
-```
+## 7. How Streaming Works (Simple Explanation)
 
-| Command | Description |
-|-|-|
-| `download-movie` | Search, download, or stream movies, anime, music, and educational content |
-| `download-series` | Search and download or stream TV series |
-| `homepage-content` | Show contents displayed on the landing page |
-| `item-details` | Show details of a particular movie or TV series |
-| `mirror-hosts` | Discover available Moviebox mirror hosts |
+### Movies
+- Search for movie
+- Get stream URL
+- Play the video directly
 
+### TV Shows
+- Search for TV show
+- Get episode list
+- Choose episode (like s1e1)
+- Get stream URL for that episode
+- Play the video
 
+**Important**: TV shows need episodes. Movies work directly.
 
-### Downloading Movies
+## 8. Tips for Beginners
 
-**Basic usage:**
-```sh
-moviebox v2 download-movie "Avatar"
-```
+- **Don't deploy backend on Cloudflare**: Cloudflare Pages is for websites, not APIs
+- **Always use correct page_url**: Copy it exactly from moviebox.ph
+- **Test API first**: Use browser to check API URLs work
+- **Start simple**: Try searching for one movie first
+- **Check logs**: If something fails, look at Render/Cloudflare logs
+- **Free limits**: Render gives 750 hours/month free
 
-**Common options:**
-```sh
-moviebox v2 download-movie "Avatar" --quality 1080p
-moviebox v2 download-movie "Avatar" --year 2009
-moviebox v2 download-movie "Avatar" --dir ~/Movies
-moviebox v2 download-movie "Avatar" --no-caption
-moviebox v2 download-movie "Avatar" --yes
-```
+## 9. Screenshots (Placeholders)
 
-| Option | Description |
-|-|-|
-| `-y, --year` | Filter by release year |
-| `-q, --quality` | Video quality: `best`, `1080p`, `720p`, `480p`, `360p`, `worst` |
-| `-d, --dir` | Download directory |
-| `-x, --language` | Subtitle language (default: English) |
-| `--no-caption` | Skip subtitle download |
-| `-Y, --yes` | Auto-confirm without prompts |
+**Render New Web Service**
+[Add screenshot here]
 
-<details>
-<summary>All options</summary>
+**Cloudflare Create Project**
+[Add screenshot here]
 
-```text
-Usage: python -m moviebox_api v2 download-movie [OPTIONS] TITLE
+**API Response Example**
+[Add screenshot here]
 
-  Search, download or stream items under movie/anime/music/education subject-types.
+---
 
-Options:
-  -s, --subject-type [movies|education|music|anime]
-                                  Subject type filter  [default: MOVIES]
-  -y, --year INTEGER              Year filter  [default: 0]
-  -q, --quality [worst|best|360p|480p|720p|1080p]
-                                  Media quality  [default: BEST]
-  -d, --dir DIRECTORY             Download directory
-  -D, --caption-dir DIRECTORY     Caption download directory
-  -m, --mode [start|resume|auto]  Download mode  [default: auto]
-  -x, --language TEXT             Caption language  [default: English]
-  -M, --movie-filename-tmpl TEXT  Movie filename template  [default: {title} ({release_year}).{ext}]
-  -C, --caption-filename-tmpl TEXT
-                                  Caption filename template  [default: {title} ({release_year}).{lan}.{ext}]
-  -t, --tasks INTEGER RANGE       Parallel download tasks  [default: 5; 1<=x<=1000]
-  -P, --part-dir DIRECTORY        Temporary parts directory
-  -E, --part-extension TEXT       Part file extension  [default: .part]
-  -N, --chunk-size INTEGER        Chunk size in kilobytes  [default: 256]
-  -R, --timeout-retry-attempts INTEGER
-                                  Retry attempts on timeout  [default: 10]
-  -B, --merge-buffer-size INTEGER RANGE
-                                  Merge buffer size in kilobytes  [1<=x<=102400]
-  -X, --stream-via [mpv|vlc]      Stream via media player instead of downloading
-  -c, --colour TEXT               Progress bar colour  [default: cyan]
-  -U, --ascii                     Use unicode blocks for progress bar
-  -z, --disable-progress-bar      Hide progress bar
-  -I, --ignore-missing-caption    Continue download when caption is missing
-  --leave / --no-leave            Keep progress bar leaves  [default: no-leave]
-  --caption / --no-caption        Download caption  [default: caption]
-  -O, --caption-only              Download caption only
-  -S, --simple                    Show percentage and bar only
-  -T, --test                      Test download without saving
-  -V, --verbose                   Show detailed output
-  -Q, --quiet                     Suppress interactive output
-  -Y, --yes                       Skip confirmation prompt
-  -h, --help                      Show this message and exit.
-```
-</details>
-
-### Downloading TV Series
-
-**Basic usage:**
-```sh
-moviebox v2 download-series "Game of Thrones" -s 1 -e 1
-```
-
-**Multiple episodes:**
-```sh
-# Download 5 episodes starting from S01E01
-moviebox v2 download-series "Game of Thrones" -s 1 -e 1 -l 5
-
-# Download entire season
-moviebox v2 download-series "Game of Thrones" -s 1 -e 1 -l 100
-
-# Download all remaining seasons
-moviebox v2 download-series "Merlin" -s 1 -e 1 --auto-mode
-```
-
-| Option | Description |
-|-|-|
-| `-s, --season` | Season number (required) |
-| `-e, --episode` | Starting episode number (required) |
-| `-l, --limit` | Number of episodes to download (default: 1) |
-| `-q, --quality` | Video quality |
-| `-x, --language` | Subtitle language |
-| `--no-caption` | Skip subtitles |
-| `-Y, --yes` | Auto-confirm |
-| `-A, --auto-mode` | Download all remaining seasons when `--limit` is 1 |
-
-<details>
-<summary>All options</summary>
-
-```text
-Usage: python -m moviebox_api v2 download-series [OPTIONS] TITLE
-
-  Search and download or stream tv series.
-
-Options:
-  -y, --year INTEGER              Year filter  [default: 0]
-  -s, --season INTEGER RANGE      Season number  [1<=x<=1000; required]
-  -e, --episode INTEGER RANGE     Starting episode  [1<=x<=1000; required]
-  -l, --limit INTEGER RANGE       Episodes to download  [default: 1; 1<=x<=1000]
-  -q, --quality [worst|best|360p|480p|720p|1080p]
-                                  Media quality  [default: BEST]
-  -x, --language TEXT             Caption language  [default: English]
-  -d, --dir DIRECTORY             Download directory
-  -D, --caption-dir DIRECTORY     Caption download directory
-  -m, --mode [start|resume|auto]  Download mode  [default: auto]
-  -L, --episode-filename-tmpl TEXT
-                                  Episode filename template  [default: {title} S{season}E{episode}.{ext}]
-  -C, --caption-filename-tmpl TEXT
-                                  Caption filename template  [default: {title} S{season}E{episode}.{lan}.{ext}]
-  -t, --tasks INTEGER RANGE       Parallel download tasks  [default: 5; 1<=x<=1000]
-  -P, --part-dir DIRECTORY        Temporary parts directory
-  -f, --format [standard|group|struct]
-                                  Episode organization format
-  -E, --part-extension TEXT       Part file extension  [default: .part]
-  -N, --chunk-size INTEGER        Chunk size in kilobytes  [default: 256]
-  -R, --timeout-retry-attempts INTEGER
-                                  Retry attempts on timeout  [default: 10]
-  -B, --merge-buffer-size INTEGER RANGE
-                                  Merge buffer size in kilobytes  [1<=x<=102400]
-  -X, --stream-via [mpv|vlc]      Stream via media player instead of downloading
-  -c, --colour TEXT               Progress bar colour  [default: cyan]
-  -U, --ascii                     Use unicode blocks for progress bar
-  -z, --disable-progress-bar      Hide progress bar
-  -I, --ignore-missing-caption    Continue download when caption is missing
-  --leave / --no-leave            Keep progress bar leaves  [default: no-leave]
-  --caption / --no-caption        Download caption  [default: caption]
-  -O, --caption-only              Download caption only
-  -A, --auto-mode                 Download all remaining seasons when limit=1
-  -S, --simple                    Show percentage and bar only
-  -T, --test                      Test download without saving
-  -V, --verbose                   Show detailed output
-  -Q, --quiet                     Suppress interactive output
-  -Y, --yes                       Skip confirmation prompt
-  -h, --help                      Show this message and exit.
-```
-</details>
-
-
-
-### Streaming via Media Players
-
-Stream content directly without downloading (requires MPV or VLC):
-
-```sh
-# Stream a movie
-moviebox v2 download-movie "Avatar" --stream-via vlc
-
-# Stream with subtitles in a specific language
-moviebox v2 download-movie "Avatar" --stream-via mpv --language French
-
-# Stream a series episode
-moviebox v2 download-series "Game of Thrones" -s 1 -e 1 --stream-via vlc
-
-# Stream with specific quality
-moviebox v2 download-series "Breaking Bad" -s 1 -e 1 --stream-via vlc --quality 1080p
-```
-
-Streaming requires the `moviebox-api[cli]` installation and MPV or VLC installed on the system. Temporary files are cleaned up automatically.
-
-
-
-## Python API
-
-### Simple Auto-Download
-
-```python
-from moviebox_api.v1 import MovieAuto
-import asyncio
-
-async def main():
-    auto = MovieAuto()
-    movie_file, subtitle_file = await auto.run("Avatar")
-    print(f"Movie saved to: {movie_file.saved_to}")
-    print(f"Subtitle saved to: {subtitle_file.saved_to}")
-
-asyncio.run(main())
-```
-
-### Download with Progress Tracking
-
-```python
-from moviebox_api.v1 import DownloadTracker, MovieAuto
-import asyncio
-
-async def progress_callback(progress: DownloadTracker):
-    percent = (progress.downloaded_size / progress.expected_size) * 100
-    print(f"[{percent:.2f}%] Downloading {progress.saved_to.name}", end="\r")
-
-async def main():
-    auto = MovieAuto()
-    await auto.run("Avatar", progress_hook=progress_callback)
-
-asyncio.run(main())
-```
-
-### Download with Manual Confirmation
-
-```python
-from moviebox_api.v1.cli import Downloader
-import asyncio
-
-async def main():
-    downloader = Downloader()
-    movie_file, subtitle_files = await downloader.download_movie("Avatar")
-    print(f"Downloaded: {movie_file}")
-    print(f"Subtitles: {subtitle_files}")
-
-asyncio.run(main())
-```
-
-### Download TV Series Episodes
-
-```python
-from moviebox_api.v1.cli import Downloader
-import asyncio
-
-async def main():
-    downloader = Downloader()
-    episodes_map = await downloader.download_tv_series(
-        "Merlin",
-        season=1,
-        episode=1,
-        limit=2,
-        # auto_mode=True  # Download entire remaining seasons when limit=1
-    )
-    print(f"Downloaded episodes: {episodes_map}")
-
-asyncio.run(main())
-```
-
-### Custom Configuration
-
-```python
-from moviebox_api.v1 import MovieAuto
-import asyncio
-
-async def main():
-    auto = MovieAuto(
-        caption_language="Spanish",
-        quality="720p",
-        download_dir="~/Downloads"
-    )
-    movie_file, subtitle_file = await auto.run("Avatar")
-
-asyncio.run(main())
-```
-
-## Advanced Configuration
-
-### Mirror Hosts
-
-Moviebox.ph has [multiple mirror hosts](https://github.com/Simatwa/moviebox-api/issues/27). To use a specific mirror:
-
-```sh
-# v1
-export MOVIEBOX_API_HOST="h5.aoneroom.com"
-
-# v2
-export MOVIEBOX_API_HOST_V2="h5-api.aoneroom.com"
-```
-
-Discover available mirrors:
-
-```sh
-moviebox v1 mirror-hosts
-```
-
-### Command Shortcuts
-
-```sh
-# Full form
-python -m moviebox_api v2 download-movie "Avatar"
-
-# Short forms
-movebox v2 download-movie "Avatar"
-movebox-v2 download-movie "Avatar"
-movebox-v1 download-movie "Avatar"
-```
-
-### Episode Organization
-
-**Group format** — episodes organized into season subfolders:
-
-```sh
-moviebox v2 download-series Merlin -s 1 -e 1 --auto-mode --format group
-```
-
-```
-Merlin (2009)/
-  S1/
-    Merlin S1E1.mp4
-    Merlin S1E2.mp4
-  S2/
-    Merlin S2E1.mp4
-```
-
-**Struct format** — hierarchical directory structure using episode numbers as filenames:
-
-```sh
-moviebox v2 download-series Merlin -s 1 -e 1 --auto-mode --format struct
-```
-
-```
-Merlin (2009)/
-  S1/
-    E1.mp4
-    E2.mp4
-  S2/
-    E1.mp4
-```
-
-> **Note:** V2 is recommended — it has no geo-restrictions at the time of writing.
-
-## Examples
-
-- [Download Movie CLI](./docs/examples/download-movie-cli.py)
-- [Download Series CLI](./docs/examples/download-series-cli.py)
-
-## Contributors
-
-<div align="center">
-
-<a href="https://github.com/Simatwa/moviebox-api/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=Simatwa/moviebox-api" />
-</a>
-
-</div>
-
-
-## Disclaimer
-
-> "All videos and pictures on MovieBox are from the Internet, and their copyrights belong to the original creators. We only provide webpage services and do not store, record, or upload any content."  
-> — *moviebox.ph*
-
-
-
-<div align="center">Made with love</div># MovieB
+Made with ❤️ for beginners

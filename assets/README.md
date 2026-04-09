@@ -1,2 +1,5 @@
-> [!NOTE]
-> Most files in this directory are for automated-tests.
+# Assets Folder
+
+This folder has files used for testing and badges.
+
+Most files here are for automated tests. You can ignore them.
