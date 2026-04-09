@@ -12,6 +12,19 @@ format = "modules"
 type = "ESModule"
 globs = ["**/*.js"]
 
-# Environment variables
+# Production environment
+[env.production]
+vars = { BACKEND_URL = "https://movieb-rsoz.onrender.com" }
+
+# Development environment
+[env.development]
+vars = { BACKEND_URL = "http://localhost:8000" }
+
+# Cache configuration for API responses
 [vars]
+<<<<<<< HEAD
 BACKEND_URL = "https://movieb-rsoz.onrender.com"
+=======
+CACHE_TTL = "3600"
+CACHE_ENABLED = "true"
+>>>>>>> 59f7be5 (fix cloudflare)

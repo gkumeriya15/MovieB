@@ -1,0 +1,39 @@
+# Cloudflare Pages Configuration for MovieBox Frontend
+# This configuration ensures only the frontend is deployed, ignoring all Python dependencies
+
+name = "movieb-frontend"
+type = "javascript"
+account_id = ""  # Add your Cloudflare Account ID
+project_name = "movieb-frontend"
+
+# Build configuration
+[build]
+command = "npm run build"
+cwd = "./frontend"
+root_dir = "dist"  # Next.js output directory
+watch_paths = ["frontend/**/*.tsx", "frontend/**/*.ts", "frontend/**/*.json"]
+
+# Environment variables for production
+[env.production]
+vars = { NEXT_PUBLIC_API_URL = "https://movieb-rsoz.onrender.com/api/v1" }
+
+# Environment variables for development
+[env.development]
+vars = { NEXT_PUBLIC_API_URL = "http://localhost:8000/api/v1" }
+
+# Cloudflare Analytics
+analytics_engine_enabled = true
+
+# Compatibility settings
+compatibility_date = "2024-01-01"
+compatibility_flags = ["streams_enable_constructors"]
+
+# Redirects and rewrites for SPA
+[[routes]]
+pattern = "/*"
+zone_name = "example.com"  # Replace with your domain
+
+[[redirects]]
+source = "/api/*"
+destination = "https://movieb-rsoz.onrender.com/api/:splat"
+status_code = 200
