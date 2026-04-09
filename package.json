@@ -1,0 +1,12 @@
+{
+  "name": "moviebox-frontend",
+  "version": "1.0.0",
+  "description": "Simple frontend for MovieBox API",
+  "main": "index.html",
+  "scripts": {
+    "build": "mkdir -p dist && cp *.html *.css *.js dist/"
+  },
+  "keywords": ["moviebox", "frontend"],
+  "author": "Your Name",
+  "license": "MIT"
+}
